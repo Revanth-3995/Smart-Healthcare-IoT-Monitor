@@ -24,7 +24,7 @@
 #define ULTRASONIC_MIN_DURATION_US    100      // Reject echoes shorter than 100 microseconds
 #define ULTRASONIC_MIN_VALID_CM       2.0f     // Minimum realistic distance
 #define ULTRASONIC_MAX_VALID_CM       300.0f   // Maximum relevant monitoring range
-#define ULTRASONIC_DEBUG              1        // Set to 1 to enable debug serial prints, 0 to disable
+#define ULTRASONIC_DEBUG              0        // Set to 1 to enable debug serial prints, 0 to disable
 
 // ============================================================================
 // ULTRASONIC ALERT ZONES CONFIGURATION
