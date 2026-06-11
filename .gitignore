@@ -1,0 +1,22 @@
+# Large ML CSV Datasets
+ML/train.csv
+ML/test.csv
+
+# Raw Dataset Directories
+ML/datasets/
+
+# Library Build / Patch Caches
+ML/temp_patch/
+*.tmp
+*.zip
+
+# Compiler & local IDE cache folders
+build/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.o
+*.elf
+*.bin
+*.hex
