@@ -22,6 +22,13 @@ private:
     bool _mqttConnected;
     unsigned long _lastMqttReconnectAttempt;
 
+    // Ultrasonic alert zone state variables
+    unsigned long _lastProximityAlertTime;
+    unsigned long _lastAbsentAlertTime;
+    unsigned long _lastBedEdgeAlertTime;
+    unsigned long _distanceAlertStartTime;
+    int _lastDistanceAlertZone; // (0=normal, 1=proximity, 2=bed edge, 3=absent)
+
     void reconnectMqtt();
 };
 

@@ -27,6 +27,15 @@
 #define ULTRASONIC_DEBUG              1        // Set to 1 to enable debug serial prints, 0 to disable
 
 // ============================================================================
+// ULTRASONIC ALERT ZONES CONFIGURATION
+// ============================================================================
+#define ULTRASONIC_PROXIMITY_MIN_CM  20.0f    // Too close warning (Zone 1)
+#define ULTRASONIC_BED_EDGE_CM       80.0f    // Sitting up / at bed edge (Zone 2)
+#define ULTRASONIC_ABSENT_CM        150.0f    // Patient out of bed (Zone 3)
+#define ULTRASONIC_ALERT_DURATION_MS  3000    // Must persist 3s before alerting
+#define ULTRASONIC_ALERT_COOLDOWN_MS 30000    // Don't repeat same alert for 30s
+
+// ============================================================================
 // WIFI & MQTT CONFIGURATION
 // ============================================================================
 #define WIFI_SSID     "Vivo..."

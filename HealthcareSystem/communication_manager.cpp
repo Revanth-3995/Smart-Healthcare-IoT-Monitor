@@ -4,7 +4,12 @@ CommunicationManager::CommunicationManager() :
     _wifiConnected(false),
     _mqttConnected(false),
     _mqttClient(_wifiClient),
-    _lastMqttReconnectAttempt(0)
+    _lastMqttReconnectAttempt(0),
+    _lastProximityAlertTime(0),
+    _lastAbsentAlertTime(0),
+    _lastBedEdgeAlertTime(0),
+    _distanceAlertStartTime(0),
+    _lastDistanceAlertZone(0)
 {}
 
 bool CommunicationManager::begin() {
@@ -121,6 +126,51 @@ bool CommunicationManager::publishTelemetry(const SensorData &data, bool fallSta
     } else if (predictedClass == 2) {
         snprintf(payload, sizeof(payload), "{\"alert\":\"BED EXIT\",\"severity\":\"INFO\"}");
         _mqttClient.publish("healthcare/alerts", payload);
+    }
+
+    // 9. Rule-based distance alert zones detection
+    int currentZone = 0;
+    if (data.distance_cm < ULTRASONIC_PROXIMITY_MIN_CM) {
+        currentZone = 1; // Proximity
+    } else if (data.distance_cm >= ULTRASONIC_ABSENT_CM) {
+        currentZone = 3; // Absent
+    } else if (data.distance_cm >= ULTRASONIC_BED_EDGE_CM) {
+        currentZone = 2; // Bed Edge
+    } else {
+        currentZone = 0; // Normal
+    }
+
+    // Reset duration timer if zone changes
+    if (currentZone != _lastDistanceAlertZone) {
+        _lastDistanceAlertZone = currentZone;
+        _distanceAlertStartTime = millis();
+    } else if (currentZone != 0) {
+        // If the same non-normal zone is active, check if duration condition has been met (3 seconds)
+        if (millis() - _distanceAlertStartTime >= ULTRASONIC_ALERT_DURATION_MS) {
+            unsigned long now = millis();
+            if (currentZone == 1) { // Proximity
+                // Do NOT fire proximity alert if an active fall event is detected
+                if (!fallState) {
+                    if (now - _lastProximityAlertTime >= ULTRASONIC_ALERT_COOLDOWN_MS) {
+                        snprintf(payload, sizeof(payload), "{\"alert\":\"PROXIMITY WARNING\",\"severity\":\"INFO\",\"distance_cm\":%.1f}", data.distance_cm);
+                        _mqttClient.publish("healthcare/alerts", payload);
+                        _lastProximityAlertTime = now;
+                    }
+                }
+            } else if (currentZone == 2) { // Bed Edge
+                if (now - _lastBedEdgeAlertTime >= ULTRASONIC_ALERT_COOLDOWN_MS) {
+                    snprintf(payload, sizeof(payload), "{\"alert\":\"BED EDGE DETECTED\",\"severity\":\"INFO\",\"distance_cm\":%.1f}", data.distance_cm);
+                    _mqttClient.publish("healthcare/alerts", payload);
+                    _lastBedEdgeAlertTime = now;
+                }
+            } else if (currentZone == 3) { // Absent
+                if (now - _lastAbsentAlertTime >= ULTRASONIC_ALERT_COOLDOWN_MS) {
+                    snprintf(payload, sizeof(payload), "{\"alert\":\"PATIENT ABSENT\",\"severity\":\"WARNING\",\"distance_cm\":%.1f}", data.distance_cm);
+                    _mqttClient.publish("healthcare/alerts", payload);
+                    _lastAbsentAlertTime = now;
+                }
+            }
+        }
     }
 
     Serial.println("[CommunicationManager] Published sensor telemetry to MQTT.");

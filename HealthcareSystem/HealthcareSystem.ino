@@ -195,7 +195,39 @@ void loop() {
             Serial.print("[Orientation]  🔄 Position Changed: ");
             Serial.println(orientLabels[current_orientation]);
         }
- 
+
+        // 8. Event-driven logging for Ultrasonic alert zones
+        int current_dist_zone = 0;
+        if (data.distance_cm < ULTRASONIC_PROXIMITY_MIN_CM) {
+            current_dist_zone = 1;
+        } else if (data.distance_cm >= ULTRASONIC_ABSENT_CM) {
+            current_dist_zone = 3;
+        } else if (data.distance_cm >= ULTRASONIC_BED_EDGE_CM) {
+            current_dist_zone = 2;
+        } else {
+            current_dist_zone = 0;
+        }
+
+        static float last_distance_zone = 0.0f;
+        if (current_dist_zone != (int)last_distance_zone) {
+            last_distance_zone = (float)current_dist_zone;
+            if (current_dist_zone == 3) {
+                Serial.print("[Ultrasonic] PATIENT ABSENT: Distance = ");
+                Serial.print(data.distance_cm, 1);
+                Serial.println(" cm (out of bed range)");
+            } else if (current_dist_zone == 1) {
+                Serial.print("[Ultrasonic] PROXIMITY WARNING: Distance = ");
+                Serial.print(data.distance_cm, 1);
+                Serial.println(" cm (too close)");
+            } else if (current_dist_zone == 2) {
+                Serial.print("[Ultrasonic] BED EDGE: Distance = ");
+                Serial.print(data.distance_cm, 1);
+                Serial.println(" cm (sitting up or at edge)");
+            } else {
+                Serial.println("[Ultrasonic] NORMAL: Distance back in normal range");
+            }
+        }
+
         lastSensorSample = now;
     }
 }
