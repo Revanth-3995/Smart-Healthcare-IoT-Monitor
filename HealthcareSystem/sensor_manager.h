@@ -37,6 +37,7 @@ public:
 private:
     bool _mpuConnected;
     SensorData _data;
+    float _filteredDistance;
     float _lastValidDistance;
 
     char _serialBuffer[128];

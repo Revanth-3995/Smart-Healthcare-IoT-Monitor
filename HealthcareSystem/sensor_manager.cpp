@@ -2,7 +2,8 @@
 
 SensorManager::SensorManager() :
     _mpuConnected(false),
-    _lastValidDistance(150.0f),
+    _filteredDistance(50.0f),
+    _lastValidDistance(50.0f),
     _serialBufferIndex(0),
     _lastPacketTime(0),
     _lastPirHighTime(0)
@@ -14,7 +15,7 @@ SensorManager::SensorManager() :
     _data.gyro_y = 0.0f;
     _data.gyro_z = 0.0f;
     _data.svm = 1.0f;
-    _data.distance_cm = 150.0f;
+    _data.distance_cm = 50.0f;
     _data.pir_motion = false;
     _data.ir_obstacle = false;
     memset(_serialBuffer, 0, sizeof(_serialBuffer));
@@ -100,15 +101,24 @@ void SensorManager::update() {
         }
     }
 
-    // 2. Read HC-SR04
+    // 2. Read HC-SR04 and apply EMA filtering
     float rawDistance = readDistance();
-    if (rawDistance >= 2.0f && rawDistance <= 300.0f) {
-        _data.distance_cm = rawDistance;
-        _lastValidDistance = rawDistance;
-    } else {
-        // Ignore outlier and reuse last valid distance
-        _data.distance_cm = _lastValidDistance;
-    }
+
+#if ULTRASONIC_DEBUG
+    Serial.print("[Ultrasonic] Raw Distance: ");
+    Serial.print(rawDistance);
+#endif
+
+    _filteredDistance = (ULTRASONIC_EMA_ALPHA * rawDistance) + 
+                        ((1.0f - ULTRASONIC_EMA_ALPHA) * _filteredDistance);
+    
+    _data.distance_cm = _filteredDistance;
+    _lastValidDistance = _filteredDistance;
+
+#if ULTRASONIC_DEBUG
+    Serial.print(" | Filtered: ");
+    Serial.println(_filteredDistance);
+#endif
 
     // 3. Read PIR State (with software hold debouncer of 5 seconds)
     bool rawPir = (digitalRead(PIR_PIN) == HIGH);
@@ -165,9 +175,39 @@ float SensorManager::readDistance() {
     delayMicroseconds(10);
     digitalWrite(ULTRASONIC_TRIG_PIN, LOW);
 
-    long duration = pulseIn(ULTRASONIC_ECHO_PIN, HIGH, 30000);
+    long duration = pulseIn(ULTRASONIC_ECHO_PIN, HIGH, ULTRASONIC_TIMEOUT_US);
+    
+    // Step 2: Timeout Check
     if (duration == 0) {
-        return -1.0f;
+#if ULTRASONIC_DEBUG
+        Serial.println("[Ultrasonic Diagnostic] ❌ Timeout: No echo received within timeout range.");
+#endif
+        return _lastValidDistance;
     }
-    return (float)duration * 0.0343f / 2.0f;
+    
+    // Step 3: Reject False Echoes (< 100 us)
+    if (duration < ULTRASONIC_MIN_DURATION_US) {
+#if ULTRASONIC_DEBUG
+        Serial.print("[Ultrasonic Diagnostic] ⚠️ False echo rejected: duration = ");
+        Serial.print(duration);
+        Serial.println(" us (less than min valid duration).");
+#endif
+        return _lastValidDistance;
+    }
+
+    // Step 4: Convert to Distance
+    float distance = (float)duration * 0.0343f / 2.0f;
+
+    // Step 5: Validate Range (2 - 300 cm)
+    if (distance < ULTRASONIC_MIN_VALID_CM || distance > ULTRASONIC_MAX_VALID_CM) {
+#if ULTRASONIC_DEBUG
+        Serial.print("[Ultrasonic Diagnostic] ⚠️ Range rejected: distance = ");
+        Serial.print(distance);
+        Serial.println(" cm (out of valid boundaries).");
+#endif
+        return _lastValidDistance;
+    }
+
+    // Step 6: Return the validated distance
+    return distance;
 }

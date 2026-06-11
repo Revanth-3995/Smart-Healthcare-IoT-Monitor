@@ -17,6 +17,16 @@
 #define IR_PIN 39
 
 // ============================================================================
+// ULTRASONIC SENSOR FILTERING & OPTIMIZATION
+// ============================================================================
+#define ULTRASONIC_TIMEOUT_US         18000    // Reduce blocking timeout to 18ms (~3m max range)
+#define ULTRASONIC_EMA_ALPHA          0.25f    // Exponential Moving Average weight (0.25 = smooth)
+#define ULTRASONIC_MIN_DURATION_US    100      // Reject echoes shorter than 100 microseconds
+#define ULTRASONIC_MIN_VALID_CM       2.0f     // Minimum realistic distance
+#define ULTRASONIC_MAX_VALID_CM       300.0f   // Maximum relevant monitoring range
+#define ULTRASONIC_DEBUG              1        // Set to 1 to enable debug serial prints, 0 to disable
+
+// ============================================================================
 // WIFI & MQTT CONFIGURATION
 // ============================================================================
 #define WIFI_SSID     "Vivo..."
