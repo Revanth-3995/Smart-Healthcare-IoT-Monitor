@@ -38,9 +38,9 @@
 // ============================================================================
 // WIFI & MQTT CONFIGURATION
 // ============================================================================
-#define WIFI_SSID     "Vivo..."
-#define WIFI_PASSWORD "Nishu...."
-#define MQTT_BROKER   "192.168.1.100"
+#define WIFI_SSID     "connecting...."
+#define WIFI_PASSWORD "123456789"
+#define MQTT_BROKER   "10.248.94.22"
 #define MQTT_PORT     1883
 #define MQTT_CLIENT_ID "ESP32_Healthcare_Node"
 

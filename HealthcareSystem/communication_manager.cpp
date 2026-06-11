@@ -173,6 +173,5 @@ bool CommunicationManager::publishTelemetry(const SensorData &data, bool fallSta
         }
     }
 
-    Serial.println("[CommunicationManager] Published sensor telemetry to MQTT.");
     return true;
 }
